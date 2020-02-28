@@ -22,29 +22,49 @@ from astropy.time import TimeDelta, Time
 def main():
 
     #Input Variables
-    Date = datetime(1998,8,10,23,10)
+    OldDate = datetime(1998,8,10,23,10)
     RA = '16-41.7'
     Dec = '36-28'
     Time = '2310'
-    Latitude = '52-30-N'
-    Longitude = '01-55-W'
-    Today = datetime.now()
+    LatDMS = '52-30-00-N'
+    LongDMS = '01-55-00-W'
+    TodayDate = datetime.now()
 
-    DaysBetween = daysBetweenJulianEpoch(Today)
-    print(DaysBetween)
 
+    LST = LocalSiderealTime(LongDMS, OldDate, Time)
+    print(LST)
+
+def LocalSiderealTime(Longitude, GivenDate, CurrentTime):   
+    DaysBetween = daysBetweenJulianEpoch(GivenDate)
+    LongDeg = dms2dd(Longitude)
+    Hours = float(CurrentTime[0]+CurrentTime[1])
+    Minutes = float((CurrentTime[2]+CurrentTime[3]))/60
+    UT_Format =  Hours+Minutes
+    LST = 100.46 + (0.985647*DaysBetween) + LongDeg + (15*UT_Format)
+
+    while(LST < 0):
+        LST+= 360
     
-def LocalSiderealTime(DaysBetween, Longitude, UT):
+    return LST
+    
+def dms2dd(DMS):
 
-    LST = 100.46 + 0.985647*DaysBetween + Longitude + 15*UT
+    degrees = DMS[0]+DMS[1] 
+    minutes = DMS[3]+DMS[4]
+    seconds = DMS[6]+DMS[7]
+    direction = DMS[9]
 
+    dd = float(degrees) + float(minutes)/60 + float(seconds)/(60*60)
+    if direction == 'S' or direction == 'W':
+        dd *= -1
+    return dd
 
 def daysBetweenJulianEpoch(theDate):
     JulianEpoch = datetime(2000,1,1,12)
     Delta = theDate - JulianEpoch 
 
     DaysBetween = Delta.days + (Delta.seconds/86400)
-    print(DaysBetween)
+    #print(DaysBetween)
     return DaysBetween
 
 if __name__ == "__main__":
