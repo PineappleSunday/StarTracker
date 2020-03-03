@@ -1,6 +1,8 @@
 import numpy as np 
 from datetime import datetime, date
 from astropy.time import TimeDelta, Time
+import math as m
+
 # Astronomy.py
 # Purpose: The purpose of this function is to convert
 # Date, Time, Location of observer, with RA and Dec of
@@ -17,6 +19,13 @@ from astropy.time import TimeDelta, Time
 #   Azimuth (deg), 269.1deg
 #   Altitude (deg), 49.2deg
 
+# http://www.stargazing.net/kepler/altaz.html
+# https://www.swift.psu.edu/secure/toop/convert.htm
+# 
+# https://www.instructables.com/id/Two-Axis-Star-Tracker/
+# https://www.instructables.com/id/Star-Track-Arduino-Powered-Star-Pointer-and-Tracke/
+
+
 
 
 def main():
@@ -32,7 +41,40 @@ def main():
 
 
     LST = LocalSiderealTime(LongDMS, OldDate, Time)
-    print(LST)
+    HA = HourAngle(LST, RA)
+    
+    Alt, Az = HaDecToAltAz(RA, Dec, HA, LatDMS)
+    print(Alt, Az)
+
+def HaDecToAltAz(RA, Declination, HourAngle, Latitude):
+    A = float(RA[3]+RA[4]+RA[5]+RA[6])/60
+    RA_Format = m.radians((float(RA[0]+RA[1]) + A)*15)
+    Lat = m.radians(dms2dd(Latitude))
+    Dec = m.radians(float(Declination[0]+Declination[1]) + float(Declination[3]+Declination[4])/60)
+    
+    Alt1 = m.sin(Dec)*m.sin(Lat)
+    Alt2 = m.cos(Lat)*m.cos(m.radians(HourAngle))*m.cos(Dec)
+    Alt = m.asin(Alt1+Alt2)
+
+    A1 = m.sin(Dec)-(m.sin(Alt)*m.sin(Lat))
+    A2 = m.cos(Alt)*m.cos(Lat)
+    A = m.acos(A1/A2)
+
+    if m.sin(m.radians(HourAngle))>0:
+        Az = 360-m.degrees(A)
+    else:
+        Az = m.degrees(A)
+
+    return m.degrees(Alt), Az
+def HourAngle(LST, RA):
+    A = float(RA[3]+RA[4]+RA[5]+RA[6])/60 
+    #Multiply by 15 to get into degrees, 15deg in a minute
+    RA_Format = (float(RA[0]+RA[1]) + A)*15
+    HA = LST - RA_Format
+    while(HA<0):
+        HA+=360
+    
+    return HA
 
 def LocalSiderealTime(Longitude, GivenDate, CurrentTime):   
     DaysBetween = daysBetweenJulianEpoch(GivenDate)
